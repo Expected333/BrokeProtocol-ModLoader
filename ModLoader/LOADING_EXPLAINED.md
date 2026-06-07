@@ -1,93 +1,93 @@
-# ModLoader - Comment le Chargement Automatique Fonctionne
+# ModLoader - How Automatic Loading Works
 
-Ce document explique comment ModLoader se charge automatiquement au démarrage du jeu.
+This document explains how ModLoader loads automatically at game startup.
 
-## 🚀 Chargement Automatique
+## 🚀 Automatic Loading
 
-### Étape 1 : Unity Reconnaît la DLL
+### Step 1: Unity Recognizes the DLL
 
-Lorsque vous ajoutez `ModLoader.dll` à `ScriptingAssemblies.json` :
+When you add `ModLoader.dll` to `ScriptingAssemblies.json`:
 
 ```json
 {
     "names": [
         "Scripts.dll",
-        "ModLoader.dll"  ← Votre DLL ici
+        "ModLoader.dll"  ← Your DLL here
     ]
 }
 ```
 
-Unity sait qu'il doit charger cette DLL au démarrage.
+Unity knows it must load this DLL at startup.
 
-### Étape 2 : Unity Scanne les Attributs
+### Step 2: Unity Scans for Attributes
 
-Au démarrage, Unity scanne **toutes les DLLs chargées** pour trouver les méthodes avec l'attribut `[RuntimeInitializeOnLoadMethod]`.
+At startup, Unity scans **all loaded DLLs** for methods with the `[RuntimeInitializeOnLoadMethod]` attribute.
 
-### Étape 3 : Unity Appelle Automatiquement `Initialize()`
+### Step 3: Unity Calls `Initialize()` Automatically
 
 ```csharp
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 public static void Initialize()
 {
-    // Cette méthode est appelée AUTOMATIQUEMENT par Unity
-    // Pas besoin de l'appeler manuellement !
+    // This method is called AUTOMATICALLY by Unity
+    // No need to call it manually!
 }
 ```
 
-## 📋 Ordre de Chargement
+## 📋 Loading Order
 
 ```
-1. Unity démarre
+1. Unity starts
    ↓
-2. Unity charge toutes les DLLs de ScriptingAssemblies.json
+2. Unity loads all DLLs from ScriptingAssemblies.json
    ↓
-3. Unity scanne pour [RuntimeInitializeOnLoadMethod]
+3. Unity scans for [RuntimeInitializeOnLoadMethod]
    ↓
-4. Unity appelle ModLoader.Core.Initialize()
+4. Unity calls ModLoader.Core.Initialize()
    ↓
-5. ModLoader crée le ModManager
+5. ModLoader creates the ModManager
    ↓
-6. ModManager scanne le dossier Mods/
+6. ModManager scans the Mods/ folder
    ↓
-7. ModManager charge tous les mods (DLLs)
+7. ModManager loads all mods (DLLs)
    ↓
-8. Chaque mod.OnLoad() est appelé
+8. Each mod.OnLoad() is called
    ↓
-9. Les mods appliquent leurs patches Harmony
+9. Mods apply their Harmony patches
    ↓
-10. Le jeu continue normalement avec les mods actifs
+10. The game continues normally with active mods
 ```
 
-## 🎯 Types de RuntimeInitializeLoadType
+## 🎯 RuntimeInitializeLoadType variants
 
 ```csharp
-// Avant le chargement de la première scène
+// Before the first scene loads
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterAssembliesLoaded)]
 
-// Avant le Awake() des objets
+// Before Awake() on objects
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSplashScreen)]
 
-// Avant le Start() des objets
+// Before Start() on objects
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
 
-// Après le chargement de la scène (RECOMMANDÉ pour ModLoader)
+// After scene load (RECOMMENDED for ModLoader)
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
 
-// Sous-système de scène
+// Scene subsystem
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
 ```
 
-**Pour ModLoader, on utilise `AfterSceneLoad`** car :
-- Les systèmes Unity sont initialisés
-- Les managers du jeu existent
-- On peut accéder à l'UI
-- Les mods peuvent patcher les systèmes déjà chargés
+**For ModLoader we use `AfterSceneLoad`** because:
+- Unity systems are initialized
+- Game managers exist
+- UI is accessible
+- Mods can patch systems that are already loaded
 
-## 🔍 Vérifier que ça Fonctionne
+## 🔍 Verify It Works
 
-### Dans les Logs Unity
+### In the Unity logs
 
-Vous devriez voir ces messages :
+You should see these messages:
 
 ```
 [ModLoader] ModLoader v1.0.0 Starting...
@@ -98,47 +98,47 @@ Vous devriez voir ces messages :
 [ModLoader] ModLoader initialized successfully! Loaded X mod(s)
 ```
 
-### Si Rien ne S'affiche
+### If nothing shows up
 
-1. **Vérifiez ScriptingAssemblies.json**
-   - Le fichier est dans `BrokeProtocol_Data/`
-   - `ModLoader.dll` est dans la liste `names`
-   - Pas d'erreur de syntaxe JSON
+1. **Check ScriptingAssemblies.json**
+   - File lives in `BrokeProtocol_Data/`
+   - `ModLoader.dll` is in the `names` list
+   - JSON syntax is valid
 
-2. **Vérifiez l'emplacement de la DLL**
-   - `ModLoader.dll` doit être dans `BrokeProtocol_Data/Managed/`
-   - Pas dans `Mods/` (sinon Unity ne le charge pas)
+2. **Check the DLL location**
+   - `ModLoader.dll` must be in `BrokeProtocol_Data/Managed/`
+   - Not in `Mods/` (Unity won't load it from there)
 
-3. **Vérifiez les dépendances**
-   - `0Harmony.dll` est présent
-   - Toutes les DLLs Unity nécessaires sont présentes
+3. **Check dependencies**
+   - `0Harmony.dll` is present
+   - All required Unity DLLs are present
 
-4. **Vérifiez les logs Unity**
-   - Fichier log : `BrokeProtocol_Data/output_log.txt`
-   - Ou dans Player.log (voir section ci-dessous)
+4. **Check Unity logs**
+   - Log file: `BrokeProtocol_Data/output_log.txt`
+   - Or in Player.log (see section below)
 
-## 📁 Emplacements des Fichiers
+## 📁 File Layout
 
 ```
 BrokeProtocol/
 ├── BrokeProtocol.exe
 ├── BrokeProtocol_Data/
-│   ├── ScriptingAssemblies.json    ← Ajouter ModLoader.dll ici
-│   ├── output_log.txt              ← Logs Unity (parfois)
+│   ├── ScriptingAssemblies.json    ← Add ModLoader.dll here
+│   ├── output_log.txt              ← Unity logs (sometimes)
 │   └── Managed/
-│       ├── ModLoader.dll           ← Votre DLL ICI
-│       ├── !_0Harmony.dll          ← Dépendance
+│       ├── ModLoader.dll           ← Your DLL HERE
+│       ├── !_0Harmony.dll          ← Dependency
 │       ├── Scripts.dll
-│       └── ... (autres DLLs Unity)
-└── Mods/                           ← Les mods des utilisateurs
-    ├── MonMod.dll
+│       └── ... (other Unity DLLs)
+└── Mods/                           ← User mods
+    ├── MyMod.dll
     └── Logs/
-        └── MonMod.log
+        └── MyMod.log
 ```
 
 ## 🛠️ Debugging
 
-### Ajouter des Logs de Debug
+### Add debug logs
 
 ```csharp
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
@@ -147,28 +147,28 @@ public static void Initialize()
     Debug.Log("[ModLoader] Initialize() was called!");
     Debug.Log($"[ModLoader] Current Time: {DateTime.Now}");
     Debug.Log($"[ModLoader] Data Path: {Application.dataPath}");
-    
-    // ... reste du code
+
+    // ... rest of code
 }
 ```
 
-### Vérifier dans Player.log
+### Check Player.log
 
-**Windows :**
+**Windows:**
 ```
 C:\Users\[Username]\AppData\LocalLow\[Company]\[Game]\Player.log
 ```
 
-**Ou dans le jeu :**
+**For this game:**
 ```
 %USERPROFILE%\AppData\LocalLow\Broke Protocol\Broke Protocol\Player.log
 ```
 
-## ⚠️ Erreurs Communes
+## ⚠️ Common Errors
 
 ### 1. "ModLoader not found in ScriptingAssemblies.json"
 
-**Solution :** Ajoutez-le manuellement :
+**Solution:** add it manually:
 
 ```json
 {
@@ -183,29 +183,29 @@ C:\Users\[Username]\AppData\LocalLow\[Company]\[Game]\Player.log
 }
 ```
 
-**Note :** Le nombre de `types` doit correspondre au nombre de `names` !
+**Note:** the number of `types` must match the number of `names`!
 
 ### 2. "Method not found: ModLoader.Core.Initialize"
 
-**Cause :** La méthode n'est pas static ou l'attribut est mal placé.
+**Cause:** the method isn't static, or the attribute is misplaced.
 
-**Solution :** Vérifiez :
+**Solution:** make sure you have:
 ```csharp
 [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-public static void Initialize() // DOIT être static
+public static void Initialize() // MUST be static
 ```
 
 ### 3. "ModLoader.dll is missing dependencies"
 
-**Cause :** Harmony ou autres DLLs manquantes.
+**Cause:** Harmony or other DLLs are missing.
 
-**Solution :** Vérifiez que toutes les références sont présentes dans `Managed/`
+**Solution:** verify that every reference is present in `Managed/`.
 
 ### 4. "Initialize() called multiple times"
 
-**Cause :** Plusieurs instances ou appels multiples.
+**Cause:** multiple instances or repeated calls.
 
-**Solution :** Le code a déjà une vérification :
+**Solution:** the code already guards against this:
 ```csharp
 if (initialized)
 {
@@ -214,26 +214,26 @@ if (initialized)
 }
 ```
 
-## 🎓 Alternatives au Chargement Automatique
+## 🎓 Alternatives to Automatic Loading
 
-Si `[RuntimeInitializeOnLoadMethod]` ne fonctionne pas, voici d'autres méthodes :
+If `[RuntimeInitializeOnLoadMethod]` doesn't work, here are other options:
 
-### Méthode 2 : Static Constructor
+### Option 2: Static constructor
 
 ```csharp
 public class Core
 {
     static Core()
     {
-        // S'exécute la première fois que la classe est référencée
+        // Runs the first time the class is referenced
         Initialize();
     }
 }
 ```
 
-**Problème :** Ne s'exécute que si quelque chose référence la classe.
+**Problem:** only runs if something references the class.
 
-### Méthode 3 : MonoBehaviour avec GameObject
+### Option 3: MonoBehaviour with GameObject
 
 ```csharp
 public class ModLoaderBehaviour : MonoBehaviour
@@ -246,11 +246,11 @@ public class ModLoaderBehaviour : MonoBehaviour
 }
 ```
 
-**Problème :** Nécessite un GameObject dans la scène.
+**Problem:** requires a GameObject in the scene.
 
-### Méthode 4 : Patch Harmony Bootstrap
+### Option 4: Harmony bootstrap patch
 
-Créer une DLL séparée qui patch le démarrage du jeu :
+Create a separate DLL that patches game startup:
 
 ```csharp
 [HarmonyPatch(typeof(SceneManager), "Awake")]
@@ -263,27 +263,26 @@ class Bootstrap
 }
 ```
 
-## ✅ Recommandation Finale
+## ✅ Final Recommendation
 
-**Utilisez `[RuntimeInitializeOnLoadMethod]`** - C'est :
-- ✅ Automatique
-- ✅ Fiable
-- ✅ Standard Unity
-- ✅ Ne nécessite pas de modification du jeu
-- ✅ Fonctionne avec juste ScriptingAssemblies.json
+**Use `[RuntimeInitializeOnLoadMethod]`**. It is:
+- ✅ Automatic
+- ✅ Reliable
+- ✅ Unity-standard
+- ✅ Requires no game modification
+- ✅ Works with just `ScriptingAssemblies.json`
 
 ## 📞 Support
 
-Si le chargement automatique ne fonctionne toujours pas :
+If automatic loading still doesn't work:
 
-1. Vérifiez `Player.log` pour les erreurs
-2. Ajoutez des `Debug.Log()` pour tracer l'exécution
-3. Vérifiez que Unity charge bien votre DLL
-4. Testez avec un mod simple d'abord
+1. Check `Player.log` for errors
+2. Add `Debug.Log()` calls to trace execution
+3. Confirm Unity actually loads your DLL
+4. Try with a minimal test mod first
 
 ---
 
-**Le ModLoader est maintenant complètement automatique !** 🎉
+**ModLoader is now fully automatic!** 🎉
 
-Ajoutez simplement `ModLoader.dll` dans `ScriptingAssemblies.json` et dans `Managed/`, et il se chargera automatiquement au démarrage du jeu.
-
+Just add `ModLoader.dll` to `ScriptingAssemblies.json` and to `Managed/`, and it will load on game startup.
