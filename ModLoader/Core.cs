@@ -18,7 +18,7 @@ namespace ModLoader
         /// <summary>
         /// Version of the ModLoader
         /// </summary>
-        public const string Version = "1.0.0";
+        public const string Version = "1.0.1";
 
         /// <summary>
         /// Unity calls this automatically at game startup
