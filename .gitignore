@@ -1,0 +1,17 @@
+# Build outputs
+**/bin/
+**/obj/
+*.user
+*.suo
+*.userprefs
+.vs/
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs / temp
+*.log
+*.tmp
