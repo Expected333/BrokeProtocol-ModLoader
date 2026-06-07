@@ -83,8 +83,11 @@ namespace ModLoader
             {
                 ConsoleBase.WriteLine($"[ModLoader] Loading {fileName}...");
 
-                // Load the assembly
-                Assembly assembly = Assembly.LoadFrom(dllPath);
+                // Load the assembly from bytes (not LoadFrom) so the original DLL in Mods/
+                // n'est PAS verrouillée par le process. Sinon update/toggle/delete à chaud
+                // échouent : Windows refuse de supprimer/déplacer un assembly chargé.
+                byte[] rawAssembly = File.ReadAllBytes(dllPath);
+                Assembly assembly = Assembly.Load(rawAssembly);
 
                 // Find all types that implement IMod
                 Type[] modTypes = assembly.GetTypes()
